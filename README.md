@@ -15,4 +15,4 @@ The gestures we want to classify are the following:
 
 And more to follow in the future...
 
-It would be a sequence of image frames at 30-60 fps.
+The training data will be a sequence of image frames at 30-60 fps.
