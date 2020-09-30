@@ -1,10 +1,3 @@
-# gesture_classification
-AWS S3 bucket that will contain the dataset. It's currently empty. The link is publically available so you can access the dataset with any AWS account.
-
-https://s3.console.aws.amazon.com/s3/buckets/gesture-recognition-data/?region=us-west-1&tab=overview
-
-The gestures we want to classify are the following:
-
 # 1. Beckoning
 
 <img src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fak8.picdn.net%2Fshutterstock%2Fvideos%2F21138658%2Fthumb%2F7.jpg&f=1&nofb=1" width="200" height="200" />
