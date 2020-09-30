@@ -1,7 +1,7 @@
 '''
 Date: 2020-09-28 15:33:01
 LastEditors: Tianling Lyu
-LastEditTime: 2020-09-28 16:26:35
+LastEditTime: 2020-09-29 14:44:14
 FilePath: \gesture_classification\model.py
 '''
 
@@ -22,8 +22,10 @@ class Model:
         if load_path is not None:
             self.__net.load_parameters(load_path, ctx=self.ctx)
         else:
-            self.__net.initialize(init=init.Xavier())
+            self.__net.initialize(init=init.Xavier(), ctx=self.ctx, force_reinit=True)
         self.__save_path = save_path
+        if not os.path.exists(self.__save_path):
+            os.makedirs(self.__save_path)
         self.__loss = loss
         self.__trainer = trainer
     
@@ -35,7 +37,7 @@ class Model:
         self.__loss = loss
         return
     
-    def set_trainer(self, trainer=gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})):
+    def set_trainer(self, trainer):
         self.__trainer = trainer
         return
     
@@ -43,19 +45,27 @@ class Model:
         if load_path is not None:
             self.__net.load_parameters(load_path, ctx=self.ctx)
         else:
-            self.__net.initialize(init=init.Xavier())
+            self.__net.initialize(init=init.Xavier(), ctx=self.ctx, force_reinit=True)
         return
     
-    def train(train_data, valid_data, n_epoch):
-        best_loss = 100000
+    def train(self, train_data, valid_data, batch_size, n_epoch):
+        # perform validation before training the network
+        best_loss = 0.
+        for data, label in valid_data:
+            best_loss += self.__loss(self.__net(data.copyto(self.ctx)), label.copyto(self.ctx)).mean().asscalar()
+        best_loss /= len(valid_data)
+        best_train = best_loss
+        print("Before training: test loss %.3f" % (best_loss))
+        self.__net.save_parameters(os.path.join(self.__save_path, "best.model"))
+        # start training the network
         for epoch in range(n_epoch):
             train_loss, valid_loss = 0., 0.
             tic = time.time()
             for data, label in train_data:
                 # forward + backward
                 with autograd.record():
-                    output = self.__net(data)
-                    loss = self.__loss(output, label)
+                    output = self.__net(data.copyto(self.ctx))
+                    loss = self.__loss(output, label.copyto(self.ctx))
                 loss.backward()
                 # update parameters
                 self.__trainer.step(batch_size)
@@ -63,17 +73,21 @@ class Model:
                 train_loss += loss.mean().asscalar()
             # calculate validation accuracy
             for data, label in valid_data:
-                valid_loss += self.__loss(self.__net(data), label).mean().asscalar()
+                valid_loss += self.__loss(self.__net(data.copyto(self.ctx)), label.copyto(self.ctx)).mean().asscalar()
             train_loss /= len(train_data)
             valid_loss /= len(valid_data)
             print("Epoch %d: loss %.3f, test loss %.3f, in %.1f sec" % (
                     epoch, train_loss, valid_loss, time.time()-tic))
+            if train_loss < best_train:
+                best_train = train_loss
             if valid_loss < best_loss:
                 best_loss = valid_loss
                 self.__net.save_parameters(os.path.join(self.__save_path, "best.model"))
+                print("\tCurrent best epoch!")
         self.__net.save_parameters(os.path.join(self.__save_path, "last.model"))
+        return best_train, best_loss
     
-    def test(test_data, acc):
+    def test(self, test_data, acc):
         test_loss, test_acc = 0., 0.
         tic = time.time()
         for data, label in test_data:
@@ -84,7 +98,7 @@ class Model:
         test_acc /= len(test_data)
         print("test loss %.3f, test acc %.3f, in %.1f sec" % (
                 test_loss, test_acc, time.time()-tic))
-        return
+        return test_loss, test_acc
     
-    def forward(data):
+    def forward(self, data):
         return self.__net(data)

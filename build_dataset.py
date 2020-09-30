@@ -1,7 +1,7 @@
 '''
 Date: 2020-09-28 06:35:30
 LastEditors: Tianling Lyu
-LastEditTime: 2020-09-28 14:33:02
+LastEditTime: 2020-09-29 09:06:13
 FilePath: \gesture_classification\build_dataset.py
 '''
 
@@ -85,6 +85,23 @@ def load_data_series(base_folder, list_file, fps):
         data_series.append(events_to_images(128, 128, events, labels, fps))
     return data_series
 
+def load_data_series_pre(base_folder, list_file, fps):
+    with open(os.path.join(base_folder, list_file), "r") as f:
+        lines = f.readlines()
+    data_series = []
+    count = 0
+    for line in lines:
+        if count >= 2:
+            break
+        aedat_filename = os.path.join(base_folder, line[:-1])
+        csv_filename = os.path.join(base_folder, line[:-7] + "_labels.csv")
+        # load files
+        width, height, events = load_aedat_file(aedat_filename)
+        labels = load_csv_file(csv_filename)
+        # convert to images
+        data_series.append(events_to_images(128, 128, events, labels, fps))
+        count += 1
+    return data_series
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -92,7 +109,11 @@ if __name__ == "__main__":
     parser.add_argument("--list-file", type=str, dest="list_file", default="trials_to_train.txt", help="txt file containing target files.")
     parser.add_argument("--save-path", type=str, dest="save_path", default="train.pickle", help="Path to the output file.")
     parser.add_argument("--fps", type=int, dest="fps", default=60, help="Video fps.")
+    parser.add_argument("--pre", type=bool, dest="pre", default=False, help="Build pre-train dataset to tune parameters.")
     args = parser.parse_args()
-    data_series = load_data_series(args.data_path, args.list_file, args.fps)
+    if args.pre:
+        data_series = load_data_series_pre(args.data_path, args.list_file, args.fps)
+    else:
+        data_series = load_data_series(args.data_path, args.list_file, args.fps)
     with open(args.save_path, "wb") as f:
         pickle.dump(data_series, f)
