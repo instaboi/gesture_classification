@@ -105,7 +105,7 @@ def load_data_series_pre(base_folder, list_file, fps):
 
 if __name__ == "__main__":
     parser = ArgumentParser()
-    parser.add_argument("--data-path", type=str, dest="data_path", default="D:\\dataset\\DVS  Gesture dataset\\DvsGesture\\", help="Path to dataset.")
+    parser.add_argument("--data-path", type=str, dest="data_path", default="/home/ubuntu/dataset/DvsGesture/", help="Path to dataset.")
     parser.add_argument("--list-file", type=str, dest="list_file", default="trials_to_train.txt", help="txt file containing target files.")
     parser.add_argument("--save-path", type=str, dest="save_path", default="train.pickle", help="Path to the output file.")
     parser.add_argument("--fps", type=int, dest="fps", default=60, help="Video fps.")

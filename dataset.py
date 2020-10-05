@@ -8,6 +8,7 @@ FilePath: \gesture_classification\dataset.py
 import random
 import pickle
 
+import mxnet as mx
 from mxnet.gluon.data import dataset
 import numpy as np
 
@@ -29,12 +30,12 @@ class DVPickleDataset(dataset.Dataset):
     
     def __getitem__(self, idx):
         item = self.__items[idx]
-        label = np.eye(self.n_label)[int(item[1]) - 1]
+        label = int(item[1]) - 1
         img = []
         for i in range(self.n_frame):
-            img.append(np.expand_dims(self.__data[item[0]][item[1]][item[2]+i], 0))
-        img = np.concatenate(img, axis=0)
-        return img.astype(np.float32), label.astype(np.float32)
+            img.append(np.expand_dims(self.__data[item[0]][item[1]][item[2]+i], 2))
+        img = np.concatenate(img, axis=2)
+        return mx.nd.array(img.astype(np.float32)), label
     
     def __len__(self):
         return len(self.__items)
